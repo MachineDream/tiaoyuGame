@@ -1,7 +1,7 @@
 {
   "description": "项目配置文件。",
   "setting": {
-    "urlCheck": false,
+    "urlCheck": true,
     "es6": true,
     "enhance": false,
     "postcss": true,
@@ -27,7 +27,6 @@
       "outputPath": ""
     },
     "enableEngineNative": false,
-    "bundle": false,
     "useIsolateContext": true,
     "useCompilerModule": true,
     "userConfirmedUseCompilerModuleSwitch": false,
@@ -37,7 +36,7 @@
     "minifyWXSS": true
   },
   "compileType": "game",
-  "libVersion": "1.9.94",
+  "libVersion": "2.16.1",
   "appid": "wx76bf9a66a06b39c3",
   "projectname": "tiaoyuGame",
   "condition": {

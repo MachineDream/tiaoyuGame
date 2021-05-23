@@ -1,176 +1,209 @@
-import Player from './player/index'
-import Enemy from './npc/enemy'
-import BackGround from './runtime/background'
-import GameInfo from './runtime/gameinfo'
-import Music from './runtime/music'
-import DataBus from './databus'
+import * as PIXI   from './libs/pixi.js';
+import config      from './config.js';
+import databus     from './databus.js';
+import BackGround  from './base/bg.js';
+import login       from './runtime/login.js';
+// import Result      from './scenes/result.js';
+import Home        from './scenes/home.js';
+import {InterfaceID} from './common/interfaceId.js'
 
-const ctx = canvas.getContext('2d')
-const databus = new DataBus()
+export default class App extends PIXI.Application {
+    constructor() {
+        super(config.GAME_WIDTH, config.GAME_HEIGHT, config.pixiOptions);
 
-/**
- * 游戏主函数
- */
-export default class Main {
-  constructor() {
-    // 维护当前requestAnimationFrame的id
-    this.aniId = 0
+        this.bindWxEvents();
 
-    this.restart()
-  }
+        // 适配小游戏的触摸事件
+        this.renderer.plugins.interaction.mapPositionToPoint = (point, x, y) => {
+            point.x = x * 2 * (375 / window.innerWidth);
+            point.y = y * 2 * (667 / window.innerHeight);
+        };
 
-  restart() {
-    databus.reset()
+        this.aniId    = null;
+        this.bindLoop = this.loop.bind(this);
 
-    canvas.removeEventListener(
-      'touchstart',
-      this.touchHandler
-    )
-
-    this.bg = new BackGround(ctx)
-    this.player = new Player(ctx)
-    this.gameinfo = new GameInfo()
-    this.music = new Music()
-
-    this.bindLoop = this.loop.bind(this)
-    this.hasEventBind = false
-
-    // 清除上一局的动画
-    window.cancelAnimationFrame(this.aniId)
-
-    this.aniId = window.requestAnimationFrame(
-      this.bindLoop,
-      canvas
-    )
-  }
-
-  /**
-   * 随着帧数变化的敌机生成逻辑
-   * 帧数取模定义成生成的频率
-   */
-  enemyGenerate() {
-    if (databus.frame % 30 === 0) {
-      const enemy = databus.pool.getItemByClass('enemy', Enemy)
-      enemy.init(6)
-      databus.enemys.push(enemy)
+        config.resources.forEach( item => PIXI.loader.add(item));
+        PIXI.loader.load(this.init.bind(this));
     }
-  }
+    lockReconnect = false;
+    tt;
+    runScene(Scene) {
+        let old = this.stage.getChildByName('scene');
 
-  // 全局碰撞检测
-  collisionDetection() {
-    const that = this
+        while (old) {
+            if ( old._destroy ) {
+                old._destroy();
+            }
+            old.destroy(true);
+            this.stage.removeChild(old);
+            old = this.stage.getChildByName('scene');
+        }
 
-    databus.bullets.forEach((bullet) => {
-      for (let i = 0, il = databus.enemys.length; i < il; i++) {
-        const enemy = databus.enemys[i]
+        let scene = new Scene();
+        scene.name = 'scene';
+        scene.sceneName = Scene.name;
+        scene.launch()
+        this.stage.addChild(scene);
 
-        if (!enemy.isPlaying && enemy.isCollideWith(bullet)) {
-          enemy.playAnimation()
-          that.music.playExplosion()
+        return scene;
+    }
 
-          bullet.visible = false
-          databus.score += 1
+    joinToRoom() {
+        wx.showLoading({ title: '加入房间中'});
+    }
 
-          break
+    scenesInit() {
+        // 从会话点进来的场景
+        if ( databus.currAccessInfo ) {
+            this.joinToRoom();
+        } else {
+            this.runScene(Home);
+        }
+    }
+
+    init() {
+        this.scaleToScreen();
+
+        this.bg = new BackGround();
+        this.stage.addChild(this.bg);
+
+        this.ticker.stop();
+        this.timer = +new Date();
+        this.aniId = window.requestAnimationFrame(this.bindLoop);
+
+        login.do((userInfo) => {
+          this.createWebSocket(userInfo);
+        });
+    }
+
+  createWebSocket(userInfo) {
+    this.socketTask = wx.connectSocket({
+      url: 'wss://game.tiaoyuyu.com/ws',
+      success: res => {
+        console.log("connect success");
+      },
+      fail: res => {
+        wx.showToast({
+          title: '请连接网络连接失败',
+          icon: 'none',
+          duration: 1500
+        });
+      }
+    });
+    this.socketTask.onOpen(res => {
+      let loginData = {
+        id: 1101,
+        nickName: userInfo.nickName,
+        avatarUrl: userInfo.avatarUrl,
+        token: databus.code
+      };
+      this.socketTask.send({
+        data: JSON.stringify(loginData)
+      });
+      this.heartCheck.reset().start(this.socketTask);
+    });
+    this.socketTask.onMessage(res => {
+      if (res && res.data && res.data != "Hello, Client!") {
+        let result = JSON.parse(res.data);
+        if (result.ErrorCode == "SUCCESS" && result.Id) {
+          this[InterfaceID[result.Id]].bind(this)();
         }
       }
+      this.heartCheck.reset().start(this.socketTask);
+    });
+    this.socketTask.onError(res=>{
+      console.log("WebSocket:发生错误");
+      this.reconnect();
     })
+  }
 
-    for (let i = 0, il = databus.enemys.length; i < il; i++) {
-      const enemy = databus.enemys[i]
+    scaleToScreen() {
+        const x = window.innerWidth / 375;
+        const y = window.innerHeight / 667;
 
-      if (this.player.isCollideWith(enemy)) {
-        databus.gameOver = true
-
-        break
-      }
+        if ( x > y ) {
+            this.stage.scale.x = y / x;
+            this.stage.x = (1 - this.stage.scale.x) / 2 * config.GAME_WIDTH;
+        } else {
+            this.stage.scale.y = x / y;
+            this.stage.y = (1 - this.stage.scale.y) / 2 * config.GAME_HEIGHT;
+        }
     }
-  }
 
-  // 游戏结束后的触摸事件处理逻辑
-  touchEventHandler(e) {
-    e.preventDefault()
+    loop() {
+        let time = +new Date();
+        this.timer = time;
+        this.renderer.render(this.stage);
+        this.aniId = window.requestAnimationFrame(this.bindLoop);
+    }
 
-    const x = e.touches[0].clientX
-    const y = e.touches[0].clientY
+    bindWxEvents() {
+      wx.login({
+        success: res => {
+          databus.code = res.code
+        }
+      })
+        wx.onShow(res => {
+            console.log('wx.onShow', res)
+            let accessInfo = res.query.accessInfo;
 
-    const area = this.gameinfo.btnArea
+            if (!accessInfo) return;
 
-    if (x >= area.startX
-        && x <= area.endX
-        && y >= area.startY
-        && y <= area.endY) this.restart()
-  }
-
+            if (!databus.currAccessInfo) {
+                databus.currAccessInfo = accessInfo;
+                return;
+            }
+        });
+    }
   /**
-   * canvas重绘函数
-   * 每一帧重新绘制所有的需要展示的元素
-   */
-  render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-    this.bg.render(ctx)
-
-    databus.bullets
-      .concat(databus.enemys)
-      .forEach((item) => {
-        item.drawToCanvas(ctx)
-      })
-
-    this.player.drawToCanvas(ctx)
-
-    databus.animations.forEach((ani) => {
-      if (ani.isPlaying) {
-        ani.aniRender(ctx)
+     * websocket重连
+     */
+    reconnect() {
+      if (this.lockReconnect) {
+          return;
       }
-    })
-
-    this.gameinfo.renderGameScore(ctx, databus.score)
-
-    // 游戏结束停止帧循环
-    if (databus.gameOver) {
-      this.gameinfo.renderGameOver(ctx, databus.score)
-
-      if (!this.hasEventBind) {
-        this.hasEventBind = true
-        this.touchHandler = this.touchEventHandler.bind(this)
-        canvas.addEventListener('touchstart', this.touchHandler)
-      }
-    }
+      this.lockReconnect = true;
+      this.tt && clearTimeout(this.tt);
+      this.tt = setTimeout(function () {
+          console.log('重连中...');
+          this.lockReconnect = false;
+          this.createWebSocket(databus.userInfo);
+      }, 4000);
   }
 
-  // 游戏逻辑更新主函数
-  update() {
-    if (databus.gameOver) return
-
-    this.bg.update()
-
-    databus.bullets
-      .concat(databus.enemys)
-      .forEach((item) => {
-        item.update()
-      })
-
-    this.enemyGenerate()
-
-    this.collisionDetection()
-
-    if (databus.frame % 20 === 0) {
-      this.player.shoot()
-      this.music.playShoot()
-    }
-  }
-
-  // 实现游戏帧循环
-  loop() {
-    databus.frame++
-
-    this.update()
-    this.render()
-
-    this.aniId = window.requestAnimationFrame(
-      this.bindLoop,
-      canvas
-    )
+/**
+     * websocket心跳检测
+     */
+    heartCheck = {
+      timeout: 5000,
+      timeoutObj: null,
+      serverTimeoutObj: null,
+      reset: function () {
+          clearTimeout(this.timeoutObj);
+          clearTimeout(this.serverTimeoutObj);
+          return this;
+      },
+      start: function (websocket) {
+          var self = this;
+          this.timeoutObj && clearTimeout(this.timeoutObj);
+          this.serverTimeoutObj && clearTimeout(this.serverTimeoutObj);
+          this.timeoutObj = setTimeout(function () {
+              //这里发送一个心跳，后端收到后，返回一个心跳消息，
+              //onmessage拿到返回的心跳就说明连接正常
+              websocket.send({
+                data: JSON.stringify({
+                  id:1001,
+                  timestamp: parseInt(new Date().getTime()/1000)
+                })
+              });
+              console.log('ping');
+              self.serverTimeoutObj = setTimeout(function () { // 如果超过一定时间还没重置，说明后端主动断开了
+                  console.log('关闭服务');
+                  websocket.close();//如果onclose会执行reconnect，我们执行 websocket.close()就行了.如果直接执行 reconnect 会触发onclose导致重连两次
+              }, self.timeout)
+          }, this.timeout)
+      }
   }
 }
+
+
