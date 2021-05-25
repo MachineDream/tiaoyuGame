@@ -5,6 +5,7 @@ import BackGround  from './base/bg.js';
 import login       from './runtime/login.js';
 // import Result      from './scenes/result.js';
 import Home        from './scenes/home.js';
+import Match        from './scenes/match.js';
 import {InterfaceID} from './common/interfaceId.js'
 
 export default class App extends PIXI.Application {
@@ -66,6 +67,7 @@ export default class App extends PIXI.Application {
         avatarUrl: data.EnemyAvatarUrl,
         nickName: data.EnemyName
       }
+      this.runScene(Match)
     }
 
     init() {
@@ -108,7 +110,7 @@ export default class App extends PIXI.Application {
       this.socketTask.send({
         data: JSON.stringify(loginData)
       });
-      this.scenesInit()
+      // this.scenesInit()
       this.heartCheck.reset().start(this.socketTask);
     });
     this.socketTask.onMessage(res => {
