@@ -61,9 +61,16 @@ export default class App extends PIXI.Application {
         }
     }
 
+    matchEnemy(data){
+      databus.enemyInfo = {
+        avatarUrl: data.EnemyAvatarUrl,
+        nickName: data.EnemyName
+      }
+    }
+
     init() {
         this.scaleToScreen();
-
+        databus.stage = this.stage
         this.bg = new BackGround();
         this.stage.addChild(this.bg);
 
@@ -90,6 +97,7 @@ export default class App extends PIXI.Application {
         });
       }
     });
+    databus.socketTask = this.socketTask
     this.socketTask.onOpen(res => {
       let loginData = {
         id: 1101,
@@ -100,13 +108,14 @@ export default class App extends PIXI.Application {
       this.socketTask.send({
         data: JSON.stringify(loginData)
       });
+      this.scenesInit()
       this.heartCheck.reset().start(this.socketTask);
     });
     this.socketTask.onMessage(res => {
       if (res && res.data && res.data != "Hello, Client!") {
         let result = JSON.parse(res.data);
         if (result.ErrorCode == "SUCCESS" && result.Id) {
-          this[InterfaceID[result.Id]].bind(this)();
+          this[InterfaceID[result.Id]].bind(this)(result);
         }
       }
       this.heartCheck.reset().start(this.socketTask);

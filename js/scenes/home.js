@@ -1,6 +1,7 @@
 import * as PIXI  from '../libs/pixi.js';
 import config     from '../config.js';
 import databus    from '../databus.js';
+import Match        from './match';
 import { createBtn, createCircle } from '../common/ui.js';
 
 export default class Home extends PIXI.Container {
@@ -31,11 +32,13 @@ export default class Home extends PIXI.Container {
                 x      : config.GAME_WIDTH / 2,
                 y      : 442,
                 onclick: () => {
-                    wx.showModal({
-                        content: '开发中，敬请期待',
-                        showCancel: false,
-                        confirmColor: '#02BB00',
-                    });
+                    let matchData = {
+                        id: 1201
+                      };
+                      databus.socketTask.send({
+                        data: JSON.stringify(matchData)
+                      });
+                      this.runScene(Match)
                 }
             }),
             createBtn({
@@ -56,6 +59,27 @@ export default class Home extends PIXI.Container {
     launch() {
         databus.matchPattern = void 0;
         this.appendOpBtn();
+    }
+
+    runScene(Scene) {
+        let old = databus.stage.getChildByName('scene');
+
+        while (old) {
+            if ( old._destroy ) {
+                old._destroy();
+            }
+            old.destroy(true);
+            databus.stage.removeChild(old);
+            old = databus.stage.getChildByName('scene');
+        }
+
+        let scene = new Scene();
+        scene.name = 'scene';
+        scene.sceneName = Scene.name;
+        scene.launch()
+        databus.stage.addChild(scene);
+
+        return scene;
     }
 }
 
