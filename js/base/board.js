@@ -12,7 +12,18 @@ export default class Board extends PIXI.Sprite {
         this.height = config.GAME_WIDTH * 19 / 20
         this.interactive = true
         this.on('pointerdown',(res)=>{
-          console.log(res.data.global)
+          let stepX = (res.data.global.x - this.x - 27.5) / 35.35
+          let stepY = (res.data.global.y - this.y - 27.5) / 35.35
+          let avatar = createBtn({
+            img    : 'images/white.png',
+            x      : 30 + Math.round(stepX) * 35.35,
+            y      : 30 + Math.round(stepY) * 35.35,
+            width: 38,
+            height:38,
+            onclick: () => {
+            }
+          })
+          this.addChild(avatar)
         })
         this.initBoard();
         let avatar = createBtn({
