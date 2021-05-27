@@ -55,3 +55,15 @@ export function createCircle(options) {
 
     return circle;
 }
+
+export function createLine(options) {
+    const { x, y, originX, originY, targetX, targetY, width, color = 0 } = options;
+    let line = new PIXI.Graphics();
+    line.lineStyle(width,color)
+    line.moveTo(originX,originY);
+    line.beginFill(color).lineTo(targetX,targetY).endFill();
+    line.x =x;
+    line.y =y;
+
+    return line
+}

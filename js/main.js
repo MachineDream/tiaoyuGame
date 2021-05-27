@@ -2,6 +2,7 @@ import * as PIXI   from './libs/pixi.js';
 import config      from './config.js';
 import databus     from './databus.js';
 import BackGround  from './base/bg.js';
+import Board  from './base/board.js';
 import login       from './runtime/login.js';
 // import Result      from './scenes/result.js';
 import Home        from './scenes/home.js';
@@ -76,6 +77,8 @@ export default class App extends PIXI.Application {
         this.bg = new BackGround();
         this.stage.addChild(this.bg);
 
+        // this.board = new Board();
+        // this.stage.addChild(this.board)
         this.ticker.stop();
         this.timer = +new Date();
         this.aniId = window.requestAnimationFrame(this.bindLoop);

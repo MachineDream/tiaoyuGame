@@ -78,7 +78,7 @@ export default class Match extends PIXI.Container {
             circleEnemy,
             avatarEnemy,
             createText({
-                str    : databus.enemyInfo?databus.enemyInfo.nickName:'匹配中······',
+                str    : databus.enemyInfo?databus.enemyInfo.nickName:'匹配中···',
                 x      : config.GAME_WIDTH * 2 / 3,
                 y      : config.GAME_HEIGHT / 2 + 100,
                 style  : {
