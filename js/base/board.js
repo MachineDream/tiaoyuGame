@@ -6,8 +6,6 @@ export default class Board extends PIXI.Sprite {
         let texture = PIXI.Texture.from('images/chessboard.png');
         super(texture);
 
-        // super();
-
         this.x = config.GAME_WIDTH / 40
         this.y = config.GAME_HEIGHT / 2 - config.GAME_WIDTH * 19 / 40
         this.width = config.GAME_WIDTH * 19 / 20
