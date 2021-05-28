@@ -66,11 +66,17 @@ export default class App extends PIXI.Application {
     matchEnemy(data){
       databus.enemyInfo = {
         avatarUrl: data.EnemyAvatarUrl,
-        nickName: data.EnemyName
+        nickName: data.EnemyName,
+        color: data.color
       }
       this.runScene(Match)
+      if(data.color == 1){
+        databus.canPlay = true
+      }
     }
-
+    drawChess(data){
+      
+    }
     init() {
         this.scaleToScreen();
         databus.stage = this.stage

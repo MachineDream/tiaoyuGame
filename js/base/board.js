@@ -1,5 +1,6 @@
 import * as PIXI from '../libs/pixi.js';
 import config    from '../config.js';
+import databus from "../databus.js"
 import {createBtn, createCircle, createLine} from '../common/ui.js'
 export default class Board extends PIXI.Sprite {
     constructor() {
@@ -12,8 +13,14 @@ export default class Board extends PIXI.Sprite {
         this.height = config.GAME_WIDTH * 19 / 20
         this.interactive = true
         this.on('pointerdown',(res)=>{
-          let stepX = (res.data.global.x - this.x - 27.5) / 35.35
-          let stepY = (res.data.global.y - this.y - 27.5) / 35.35
+          if(!databus.canPlay){
+            return
+          }
+          let stepX = (res.data.global.x - this.x * databus.stage.scale.x - databus.stage.x - 27.5) / (45.79 * databus.stage.scale.x)
+          let stepY = (res.data.global.y - this.y * databus.stage.scale.y - databus.stage.y -  27.5) / (45.79 * databus.stage.scale.y)
+          if(stepX < 0 || stepY < 0 || stepX > 14.5 || stepY > 14.5){
+            return
+          }
           let avatar = createBtn({
             img    : 'images/white.png',
             x      : 30 + Math.round(stepX) * 35.35,
@@ -24,6 +31,20 @@ export default class Board extends PIXI.Sprite {
             }
           })
           this.addChild(avatar)
+          databus.canPlay = false
+          let stepInfo = {
+            id:1301,
+            step:{
+              // color:databus.enemyInfo.color,
+              pos:{
+                X: Math.round(stepX),
+                Y: Math.round(stepY)
+              }
+            }
+          }
+          // databus.socketTask.send({
+          //   data:JSON.stringify(stepInfo)
+          // })
         })
         this.initBoard();
         let avatar = createBtn({

@@ -1,4 +1,5 @@
 export const InterfaceID = {
   1102: "scenesInit",
-  1302: "matchEnemy"
+  1202: "matchEnemy",
+  1302: "drawChess"
 }
