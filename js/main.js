@@ -2,12 +2,12 @@ import * as PIXI   from './libs/pixi.js';
 import config      from './config.js';
 import databus     from './databus.js';
 import BackGround  from './base/bg.js';
-import Board  from './base/board.js';
 import login       from './runtime/login.js';
-// import Result      from './scenes/result.js';
 import Home        from './scenes/home.js';
 import Match        from './scenes/match.js';
+import Play        from './scenes/play.js';
 import {InterfaceID} from './common/interfaceId.js'
+import {createBtn} from './common/ui.js'
 
 export default class App extends PIXI.Application {
     constructor() {
@@ -67,15 +67,52 @@ export default class App extends PIXI.Application {
       databus.enemyInfo = {
         avatarUrl: data.EnemyAvatarUrl,
         nickName: data.EnemyName,
-        color: data.color
+        color: data.Color
       }
       this.runScene(Match)
-      if(data.color == 1){
+      if(data.Color == 1){
         databus.canPlay = true
       }
+      wx.showLoading({
+        title: '加载游戏中。。。',
+      })
+      let that = this
+      setTimeout(function () {
+        wx.hideLoading({
+          success: ()=>{
+            that.runScene(Play)
+          }
+        })
+      }, 2000)
     }
     drawChess(data){
-      
+      let latestChess = data.Steps[data.Steps.length - 1]
+      if(latestChess.Color == databus.enemyInfo.color){
+        return
+      }
+      let avatar = createBtn({
+        img    : latestChess.Color == 1 ? 'images/white.png' : 'images/black.png',
+        x      : 30 + latestChess.Pos.X * 35.35,
+        y      : 30 + latestChess.Pos.Y * 35.35,
+        width: 38,
+        height:38,
+        onclick: () => {
+        }
+      })
+      databus.board.addChild(avatar)
+      databus.GoBangArray[latestChess.Pos.X][latestChess.Pos.Y] = latestChess.Color
+      databus.canPlay = true
+    }
+    broadcastResult(data){
+      wx.showModal({
+        content: 'You ' + data.GameResult + '!',
+        showCancel: false,
+        confirmColor: '#02BB00',
+        success: ()=>{
+          this.stage.removeChild(databus.board)
+          this.runScene(Home)
+        }
+    });
     }
     init() {
         this.scaleToScreen();
@@ -83,8 +120,6 @@ export default class App extends PIXI.Application {
         this.bg = new BackGround();
         this.stage.addChild(this.bg);
 
-        // this.board = new Board();
-        // this.stage.addChild(this.board)
         this.ticker.stop();
         this.timer = +new Date();
         this.aniId = window.requestAnimationFrame(this.bindLoop);
@@ -119,7 +154,6 @@ export default class App extends PIXI.Application {
       this.socketTask.send({
         data: JSON.stringify(loginData)
       });
-      // this.scenesInit()
       this.heartCheck.reset().start(this.socketTask);
     });
     this.socketTask.onMessage(res => {
@@ -182,12 +216,13 @@ export default class App extends PIXI.Application {
       if (this.lockReconnect) {
           return;
       }
+      let that = this
       this.lockReconnect = true;
       this.tt && clearTimeout(this.tt);
       this.tt = setTimeout(function () {
           console.log('重连中...');
-          this.lockReconnect = false;
-          this.createWebSocket(databus.userInfo);
+          that.lockReconnect = false;
+          that.createWebSocket(databus.userInfo);
       }, 4000);
   }
 

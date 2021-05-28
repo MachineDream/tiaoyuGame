@@ -33,7 +33,8 @@ export default class Home extends PIXI.Container {
                 y      : 442,
                 onclick: () => {
                     let matchData = {
-                        id: 1201
+                        id: 1201,
+                        matchType: 1
                       };
                       databus.socketTask.send({
                         data: JSON.stringify(matchData)

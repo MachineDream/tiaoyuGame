@@ -22,6 +22,13 @@ export default class Match extends PIXI.Container {
                     success: (res) => {
                         if ( res.confirm ) {
                             databus.enemyInfo = null
+                            let matchData = {
+                                id: 1201,
+                                matchType: 2
+                              };
+                              databus.socketTask.send({
+                                data: JSON.stringify(matchData)
+                              });
                             this.runScene(Home)
                         }
                     }

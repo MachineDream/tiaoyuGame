@@ -21,8 +21,11 @@ export default class Board extends PIXI.Sprite {
           if(stepX < 0 || stepY < 0 || stepX > 14.5 || stepY > 14.5){
             return
           }
+          if(databus.GoBangArray[Math.round(stepX)][Math.round(stepY)] != 0){
+            return
+          }
           let avatar = createBtn({
-            img    : 'images/white.png',
+            img    : databus.enemyInfo.color == 1 ? 'images/white.png' : 'images/black.png',
             x      : 30 + Math.round(stepX) * 35.35,
             y      : 30 + Math.round(stepY) * 35.35,
             width: 38,
@@ -31,41 +34,23 @@ export default class Board extends PIXI.Sprite {
             }
           })
           this.addChild(avatar)
+          databus.GoBangArray[Math.round(stepX)][Math.round(stepY)] = databus.enemyInfo.color
           databus.canPlay = false
           let stepInfo = {
             id:1301,
             step:{
-              // color:databus.enemyInfo.color,
+              color:databus.enemyInfo.color,
               pos:{
                 X: Math.round(stepX),
                 Y: Math.round(stepY)
               }
             }
           }
-          // databus.socketTask.send({
-          //   data:JSON.stringify(stepInfo)
-          // })
+          databus.socketTask.send({
+            data:JSON.stringify(stepInfo)
+          })
         })
         this.initBoard();
-        let avatar = createBtn({
-          img    : 'images/white.png',
-          x      : 380,
-          y      : 275,
-          width: 38,
-          height:38,
-          onclick: () => {
-          }
-        })
-        let avatar1 = createBtn({
-          img    : 'images/black.png',
-          x      : 345,
-          y      : 275,
-          width: 38,
-          height:38,
-          onclick: () => {
-          }
-        })
-        this.addChild(avatar,avatar1)
     }
 
     initBoard(){
@@ -148,6 +133,7 @@ export default class Board extends PIXI.Sprite {
       color: 0x333
     })
     )
+    databus.GoBangArray =  Array(15).fill(0).map(x=>Array(15).fill(0))
     }
 
 }
