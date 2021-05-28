@@ -26,6 +26,10 @@ export default class App extends PIXI.Application {
 
         config.resources.forEach( item => PIXI.loader.add(item));
         PIXI.loader.load(this.init.bind(this));
+        wx.showShareMenu({
+          withShareTicket: true,
+          menus: ['shareAppMessage', 'shareTimeline']
+        })
     }
     lockReconnect = false;
     tt;
