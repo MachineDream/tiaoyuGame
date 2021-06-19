@@ -106,6 +106,11 @@ export default class App extends PIXI.Application {
       databus.board.addChild(avatar)
       databus.GoBangArray[latestChess.Pos.X][latestChess.Pos.Y] = latestChess.Color
       databus.canPlay = true
+      wx.showToast({
+        title: '你的回合！',
+        icon: 'none',
+        duration: 500
+      })
     }
     broadcastResult(data){
       wx.showModal({
@@ -114,6 +119,7 @@ export default class App extends PIXI.Application {
         confirmColor: '#02BB00',
         success: ()=>{
           this.stage.removeChild(databus.board)
+          databus.enemyInfo = null
           this.runScene(Home)
         }
     });
